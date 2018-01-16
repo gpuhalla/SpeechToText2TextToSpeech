@@ -31,5 +31,5 @@ A script to convert your voice into text, and play that text back with a text-to
   
     * This is dependent on the Windows installed text-to-speech voices on your machine
   
-## License
- Since this is based heavily on the Google Cloud Speech streaming example [here] , I have copied the license they used.
+## License:
+ Since this is based heavily on the Google Cloud Speech streaming example [here](https://cloud.google.com/speech/docs/streaming-recognize) , I have copied the license they used.
