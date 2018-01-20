@@ -33,11 +33,13 @@ voices = voiceEngine.getProperty('voices')
 voiceEngine.setProperty('voice', voices[1].id) # initial 2 voices installed with english windows, set to Zira
 # Set voice global variable for thread to change
 voiceID = voices[1].id
-# Set mute global for thread
+# Set mute global for thread and listen global
 playVoice = True
+isListening = True
 
 import threading
 import msvcrt
+from time import sleep
 
 # Colors for printing
 import colorama
@@ -162,8 +164,11 @@ def listen_print_loop(responses):
             
             # Check for a change in voice engine voice
             voiceEngine.setProperty('voice', voiceID)
+            # Do we still need to have Google listen?
+            if not isListening:
+                break
             # Read message using tts
-            readUsingTTS(transcript) 
+            readUsingTTS(transcript)              
 
             # Exit recognition if any of the transcribed phrases could be
             # one of our keywords.
@@ -184,8 +189,7 @@ def readUsingTTS(ttsMessage):
     
 def toggleVoice(run_event):
     print("Toggle voice started!")
-    global playVoice
-    global voiceID
+    global playVoice, voiceID, isListening
     voices = voiceEngine.getProperty('voices')
     while run_event.is_set():
         if msvcrt.kbhit():
@@ -193,8 +197,11 @@ def toggleVoice(run_event):
             #print(key)
             if key == 'z':# or key == 'v':
                 playVoice = not playVoice
-                print("Microphone " + str(playVoice))
-            elif key in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']: #numberpad is easiest
+                print(colorama.Fore.YELLOW + colorama.Style.BRIGHT + "Microphone: " + str(playVoice) + colorama.Style.RESET_ALL)
+            elif key == 'q':
+                isListening = not isListening
+                print(colorama.Fore.RED + colorama.Style.BRIGHT + "Listening: " + str(isListening) + colorama.Style.RESET_ALL)
+            elif key in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']: # Assign voices to numbers, use numberpad
                 if int(key) < len(voices):
                     # Make it easier to see you have changed the voice
                     print(colorama.Fore.CYAN + colorama.Style.BRIGHT + "Voice changed to: " + voices[int(key)].name + colorama.Style.RESET_ALL)
@@ -214,27 +221,33 @@ def main():
     thread.start()
     
     try:
+        while(True):
+            if isListening:
     
-        client = speech.SpeechClient()
-        print(client)
-        print("Okay, Start Talking!")
-        config = types.RecognitionConfig(
-            encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
-            sample_rate_hertz=RATE,
-            language_code=language_code)
-        streaming_config = types.StreamingRecognitionConfig(
-            config=config,
-            interim_results=True)
+                client = speech.SpeechClient()
+                print(client)
+                print("Okay, Start Talking!")
+                config = types.RecognitionConfig(
+                    encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
+                    sample_rate_hertz=RATE,
+                    language_code=language_code)
+                streaming_config = types.StreamingRecognitionConfig(
+                    config=config,
+                    interim_results=True)
 
-        with MicrophoneStream(RATE, CHUNK) as stream:
-            audio_generator = stream.generator()
-            requests = (types.StreamingRecognizeRequest(audio_content=content)
-                        for content in audio_generator)
+                with MicrophoneStream(RATE, CHUNK) as stream:
+                    audio_generator = stream.generator()
+                    requests = (types.StreamingRecognizeRequest(audio_content=content)
+                                for content in audio_generator)
 
-            responses = client.streaming_recognize(streaming_config, requests)
+                    responses = client.streaming_recognize(streaming_config, requests)
 
-            # Now, put the transcription responses to use.
-            listen_print_loop(responses)
+                    # Now, put the transcription responses to use.
+                    listen_print_loop(responses)
+            else:
+                print("Not currently listening...")
+                sleep(1)
+                
         
     # Catch cntrl+c so that the thread closes correctly    
     except KeyboardInterrupt:
