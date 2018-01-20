@@ -30,14 +30,18 @@ voiceEngine = pyttsx.init()
 # Get list of OS installed voices
 voices = voiceEngine.getProperty('voices')
 # Given a list of installed voices, set one as the engine voice
-voiceEngine.setProperty('voice', voices[1].id) # 0 = dave, 1 = zira, 2 = haruka(japanese language pack)
+voiceEngine.setProperty('voice', voices[1].id) # initial 2 voices installed with english windows, set to Zira
 # Set voice global variable for thread to change
 voiceID = voices[1].id
+# Set mute global for thread
+playVoice = True
 
 import threading
 import msvcrt
-# Set mute global for thread
-playVoice = True
+
+# Colors for printing
+import colorama
+colorama.init()
 
 # Audio recording parameters
 RATE = 16000
@@ -187,19 +191,14 @@ def toggleVoice(run_event):
         if msvcrt.kbhit():
             key = msvcrt.getch()
             #print(key)
-            if key == 'z' or key == 'v':
+            if key == 'z':# or key == 'v':
                 playVoice = not playVoice
                 print("Microphone " + str(playVoice))
-            elif key == '1':
-                print("Voice changed to 0: Dave")
-                voiceID = voices[0].id
-            elif key == '2':
-                print("Voice changed to 1: Zira")
-                voiceID = voices[1].id                
-            elif key == '3':
-                print("Voice changed to 2: Haruka")
-                voiceID = voices[2].id
-                    
+            elif key in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']: #numberpad is easiest
+                if int(key) < len(voices):
+                    # Make it easier to see you have changed the voice
+                    print(colorama.Fore.CYAN + colorama.Style.BRIGHT + "Voice changed to: " + voices[int(key)].name + colorama.Style.RESET_ALL)
+                    voiceID = voices[int(key)].id
     return
     
 def main():
