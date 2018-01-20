@@ -29,6 +29,8 @@ import pyttsx
 voiceEngine = pyttsx.init()
 # Get list of OS installed voices
 voices = voiceEngine.getProperty('voices')
+print("Available voices: ")
+for voice in voices: print(voice.name)
 # Given a list of installed voices, set one as the engine voice
 voiceEngine.setProperty('voice', voices[1].id) # initial 2 voices installed with english windows, set to Zira
 # Set voice global variable for thread to change
@@ -37,8 +39,7 @@ voiceID = voices[1].id
 playVoice = True
 isListening = True
 
-import threading
-import msvcrt
+import keyboard
 from time import sleep
 
 # Colors for printing
@@ -187,25 +188,30 @@ def readUsingTTS(ttsMessage):
     
     return
     
-def toggleVoice(run_event):
-    print("Toggle voice started!")
-    global playVoice, voiceID, isListening
+def setupHotkeys():
+    keyboard.add_hotkey('q', muteOutputTTS)
+    keyboard.add_hotkey('z', closeAnalysisConnection)
+    for number in range(0,len(voices)):
+        keyboard.add_hotkey(str(number), changeVoice, args=[number])
+    return
+    
+def muteOutputTTS():
+    global playVoice
+    playVoice = not playVoice
+    print(colorama.Fore.YELLOW + colorama.Style.BRIGHT + "Microphone: " + str(playVoice) + colorama.Style.RESET_ALL)
+    return
+    
+def closeAnalysisConnection():
+    global isListening
+    isListening = not isListening
+    print(colorama.Fore.RED + colorama.Style.BRIGHT + "Listening: " + str(isListening) + colorama.Style.RESET_ALL)
+    return
+    
+def changeVoice(number):
+    global voiceID
     voices = voiceEngine.getProperty('voices')
-    while run_event.is_set():
-        if msvcrt.kbhit():
-            key = msvcrt.getch()
-            #print(key)
-            if key == 'z':# or key == 'v':
-                playVoice = not playVoice
-                print(colorama.Fore.YELLOW + colorama.Style.BRIGHT + "Microphone: " + str(playVoice) + colorama.Style.RESET_ALL)
-            elif key == 'q':
-                isListening = not isListening
-                print(colorama.Fore.RED + colorama.Style.BRIGHT + "Listening: " + str(isListening) + colorama.Style.RESET_ALL)
-            elif key in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']: # Assign voices to numbers, use numberpad
-                if int(key) < len(voices):
-                    # Make it easier to see you have changed the voice
-                    print(colorama.Fore.CYAN + colorama.Style.BRIGHT + "Voice changed to: " + voices[int(key)].name + colorama.Style.RESET_ALL)
-                    voiceID = voices[int(key)].id
+    voiceID = voices[number].id
+    print(colorama.Fore.CYAN + colorama.Style.BRIGHT + "Voice changed to: " + voices[number].name + colorama.Style.RESET_ALL)
     return
     
 def main():
@@ -213,47 +219,36 @@ def main():
     # for a list of supported languages.
     language_code = 'en-US'  # a BCP-47 language tag
     
-    # Set up thread close event
-    run_event = threading.Event()
-    run_event.set()
-    # Create new thread running toggleVoice to read keyboard inputs
-    thread = threading.Thread(target = toggleVoice, args = (run_event,))
-    thread.start()
-    
-    try:
-        while(True):
-            if isListening:
-    
-                client = speech.SpeechClient()
-                print(client)
-                print("Okay, Start Talking!")
-                config = types.RecognitionConfig(
-                    encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
-                    sample_rate_hertz=RATE,
-                    language_code=language_code)
-                streaming_config = types.StreamingRecognitionConfig(
-                    config=config,
-                    interim_results=True)
+    setupHotkeys()
 
-                with MicrophoneStream(RATE, CHUNK) as stream:
-                    audio_generator = stream.generator()
-                    requests = (types.StreamingRecognizeRequest(audio_content=content)
-                                for content in audio_generator)
+    while(True):
+        if isListening:
 
-                    responses = client.streaming_recognize(streaming_config, requests)
+            client = speech.SpeechClient()
+            print(client)
+            print("Okay, Start Talking!")
+            config = types.RecognitionConfig(
+                encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
+                sample_rate_hertz=RATE,
+                language_code=language_code)
+            streaming_config = types.StreamingRecognitionConfig(
+                config=config,
+                interim_results=True)
 
-                    # Now, put the transcription responses to use.
-                    listen_print_loop(responses)
-            else:
-                print("Not currently listening...")
-                sleep(1)
+            with MicrophoneStream(RATE, CHUNK) as stream:
+                audio_generator = stream.generator()
+                requests = (types.StreamingRecognizeRequest(audio_content=content)
+                            for content in audio_generator)
+
+                responses = client.streaming_recognize(streaming_config, requests)
+
+                # Now, put the transcription responses to use.
+                listen_print_loop(responses)
                 
-        
-    # Catch cntrl+c so that the thread closes correctly    
-    except KeyboardInterrupt:
-        run_event.clear()
-        thread.join()
-        print("Closed Thread")
+        else:
+            print("Not currently listening...")
+            sleep(1)
+
 
 if __name__ == '__main__':
     main()
