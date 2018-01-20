@@ -2,14 +2,13 @@
 A script to convert your voice into text, and play that text back with a text-to-speech voice
 
 ## Requirements:
-  * Windows
-    * The keyboard capture is done using the msvcrt python library, which is Windows exclusive.
+  * **NOTE:** Only tested on Windows, but should work on other OS's
   * Python 2.7
     * Python Dependencies
       * Google Cloud (google-cloud)
       * pyaudio
       * pyttsx
-      * msvcrt
+      * keyboard
       * colorama
   * A Google Cloud Account
 
