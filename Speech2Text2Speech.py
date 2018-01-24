@@ -16,6 +16,8 @@ from __future__ import division
 
 import re
 import sys
+import time
+import itertools
 
 from google.cloud import speech
 from google.cloud.speech import enums
@@ -24,13 +26,19 @@ import pyaudio
 from six.moves import queue
 # [END import_libraries]
 
+import keyboard
+
+# Colors for printing
+import colorama
+colorama.init()
+
 import pyttsx
 # Initialize voice engine for tts
 voiceEngine = pyttsx.init()
 # Get list of OS installed voices
 voices = voiceEngine.getProperty('voices')
 print("Available voices: ")
-for voice in voices: print(voice.name)
+for voice in voices: print(colorama.Fore.CYAN + colorama.Style.BRIGHT + voice.name + colorama.Style.RESET_ALL)
 # Given a list of installed voices, set one as the engine voice
 voiceEngine.setProperty('voice', voices[1].id) # initial 2 voices installed with english windows, set to Zira
 # Set voice global variable for thread to change
@@ -38,13 +46,7 @@ voiceID = voices[1].id
 # Set mute global for thread and listen global
 playVoice = True
 isListening = True
-
-import keyboard
-from time import sleep
-
-# Colors for printing
-import colorama
-colorama.init()
+rtcRedo = False
 
 # Audio recording parameters
 RATE = 16000
@@ -117,7 +119,7 @@ class MicrophoneStream(object):
 # [END audio_stream]
 
 
-def listen_print_loop(responses):
+def listen_print_loop(responses, oldTime):
     """Iterates through server responses and prints them.
 
     The responses passed is a generator that will block until a response
@@ -134,6 +136,18 @@ def listen_print_loop(responses):
     """
     num_chars_printed = 0
     for response in responses:
+        
+        # Do we still need to have Google listen?
+        if not isListening:
+            break
+        # How to deal with RTC timeouts?
+        if time.time() > oldTime + 60:
+            rtcRedo = True
+            print("Resetting connection to avoid RTC Timeout...")
+            break
+        else:
+            rtcRedo = False
+        
         if not response.results:
             continue
 
@@ -165,9 +179,6 @@ def listen_print_loop(responses):
             
             # Check for a change in voice engine voice
             voiceEngine.setProperty('voice', voiceID)
-            # Do we still need to have Google listen?
-            if not isListening:
-                break
             # Read message using tts
             readUsingTTS(transcript)              
 
@@ -184,8 +195,7 @@ def readUsingTTS(ttsMessage):
     # Play the tts message using voice engine
     if playVoice:
         voiceEngine.say(ttsMessage)
-        voiceEngine.runAndWait()
-    
+        voiceEngine.runAndWait() 
     return
     
 def setupHotkeys():
@@ -213,20 +223,22 @@ def changeVoice(number):
     voiceID = voices[number].id
     print(colorama.Fore.CYAN + colorama.Style.BRIGHT + "Voice changed to: " + voices[number].name + colorama.Style.RESET_ALL)
     return
-    
+
 def main():
     # See http://g.co/cloud/speech/docs/languages
     # for a list of supported languages.
     language_code = 'en-US'  # a BCP-47 language tag
     
     setupHotkeys()
+    
+    oldTime = time.time()
 
     while(True):
-        if isListening:
+        if isListening or rtcRedo:
 
             client = speech.SpeechClient()
-            print(client)
-            print("Okay, Start Talking!")
+            #print(client)
+            print("Connected: Okay, Start Talking!")
             config = types.RecognitionConfig(
                 encoding=enums.RecognitionConfig.AudioEncoding.LINEAR16,
                 sample_rate_hertz=RATE,
@@ -243,11 +255,16 @@ def main():
                 responses = client.streaming_recognize(streaming_config, requests)
 
                 # Now, put the transcription responses to use.
-                listen_print_loop(responses)
+                listen_print_loop(responses, oldTime)
                 
         else:
-            print("Not currently listening...")
-            sleep(1)
+            #print("Not Listening...")
+            spinner = itertools.cycle(['-', '/', '|', '\\'])
+            while not isListening:
+                sys.stdout.write('Not Listening... ' + spinner.next() + '\r')
+                sys.stdout.flush()
+                time.sleep(0.2)
+                #sys.stdout.write('\b')
 
 
 if __name__ == '__main__':
