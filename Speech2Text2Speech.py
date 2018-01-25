@@ -1,16 +1,5 @@
 #!/usr/bin/env python
 
-"""Google Cloud Speech API sample application using the streaming API.
-
-NOTE: This module requires the additional dependency `pyaudio`. To install
-using pip:
-
-    pip install pyaudio
-
-Example usage:
-    python transcribe_streaming_mic.py
-"""
-
 # [START import_libraries]
 from __future__ import division
 
@@ -271,9 +260,11 @@ def main():
             #print("Not Listening...")
             spinner = itertools.cycle(['-', '/', '|', '\\'])
             while not isListening:
+                global oldTime
                 sys.stdout.write('Not Listening... ' + spinner.next() + '\r')
                 sys.stdout.flush()
                 time.sleep(0.2)
+                oldTime = time.time()
                 #sys.stdout.write('\b')
 
 
