@@ -47,6 +47,8 @@ voiceID = voices[1].id
 playVoice = True
 isListening = True
 rtcRedo = False
+oldTime = time.time()
+
 
 # Audio recording parameters
 RATE = 16000
@@ -119,7 +121,7 @@ class MicrophoneStream(object):
 # [END audio_stream]
 
 
-def listen_print_loop(responses, oldTime):
+def listen_print_loop(responses):
     """Iterates through server responses and prints them.
 
     The responses passed is a generator that will block until a response
@@ -141,7 +143,9 @@ def listen_print_loop(responses, oldTime):
         if not isListening:
             break
         # How to deal with RTC timeouts?
+        global oldTime
         if time.time() > oldTime + 60:
+            oldTime = time.time()
             rtcRedo = True
             print("Resetting connection to avoid RTC Timeout...")
             break
@@ -208,13 +212,21 @@ def setupHotkeys():
 def muteOutputTTS():
     global playVoice
     playVoice = not playVoice
-    print(colorama.Fore.YELLOW + colorama.Style.BRIGHT + "Microphone: " + str(playVoice) + colorama.Style.RESET_ALL)
+    if playVoice:
+        print(colorama.Fore.GREEN)
+    else:
+        print(colorama.Fore.YELLOW)
+    print(colorama.Style.BRIGHT + "Microphone: " + str(playVoice) + colorama.Style.RESET_ALL)
     return
     
 def closeAnalysisConnection():
     global isListening
     isListening = not isListening
-    print(colorama.Fore.RED + colorama.Style.BRIGHT + "Listening: " + str(isListening) + colorama.Style.RESET_ALL)
+    if isListening:
+        print(colorama.Fore.GREEN)
+    else:
+        print(colorama.Fore.RED)
+    print(colorama.Style.BRIGHT + "Listening: " + str(isListening) + colorama.Style.RESET_ALL)
     return
     
 def changeVoice(number):
@@ -231,8 +243,6 @@ def main():
     
     setupHotkeys()
     
-    oldTime = time.time()
-
     while(True):
         if isListening or rtcRedo:
 
@@ -255,7 +265,7 @@ def main():
                 responses = client.streaming_recognize(streaming_config, requests)
 
                 # Now, put the transcription responses to use.
-                listen_print_loop(responses, oldTime)
+                listen_print_loop(responses)
                 
         else:
             #print("Not Listening...")
