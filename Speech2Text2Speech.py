@@ -36,13 +36,12 @@ voiceID = voices[1].id
 playVoice = True
 isListening = True
 rtcRedo = False
+resetPress = False
 oldTime = time.time()
-
 
 # Audio recording parameters
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
-
 
 class MicrophoneStream(object):
     """Opens a recording stream as a generator yielding the audio chunks."""
@@ -132,10 +131,11 @@ def listen_print_loop(responses):
         if not isListening:
             break
         # How to deal with RTC timeouts?
-        global oldTime
-        if time.time() > oldTime + 60:
+        global oldTime, resetPress
+        if time.time() > oldTime + 90 or resetPress:
             oldTime = time.time()
             rtcRedo = True
+            resetPress = False
             print("Resetting connection to avoid RTC Timeout...")
             break
         else:
@@ -192,8 +192,9 @@ def readUsingTTS(ttsMessage):
     return
     
 def setupHotkeys():
-    keyboard.add_hotkey('q', muteOutputTTS)
-    keyboard.add_hotkey('z', closeAnalysisConnection)
+    keyboard.add_hotkey('e', muteOutputTTS)
+    keyboard.add_hotkey('q', closeAnalysisConnection)
+    keyboard.add_hotkey('r', forceResetConnection)
     for number in range(0,len(voices)):
         keyboard.add_hotkey(str(number), changeVoice, args=[number])
     return
@@ -216,6 +217,11 @@ def closeAnalysisConnection():
     else:
         print(colorama.Fore.RED)
     print(colorama.Style.BRIGHT + "Listening: " + str(isListening) + colorama.Style.RESET_ALL)
+    return
+    
+def forceResetConnection():
+    global oldTime, resetPress
+    resetPress = True
     return
     
 def changeVoice(number):
