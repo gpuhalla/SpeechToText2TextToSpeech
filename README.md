@@ -35,9 +35,13 @@ A script to convert your voice into text, and play that text back with a text-to
   
   You can changes voices using numbers '1', '2', '3', etc.
   * This is dependent on the number of installed text-to-speech voices on your machine.
+  * If you have more than 10 voices installed, any voices past the 10<sup>th</sup> voice will not be bound to a key!
   
 ## Output:
   If you want to use the speech playback of the text as your voice in an application, you will need to redirect the audio from your output device back to an input device. To do this, I recommend using [Virtual Audio Cables](https://www.vb-audio.com/Cable/index.htm#DownloadCable) along with [Audio Router](https://github.com/audiorouterdev/audio-router) for better sound management.
+  
+## More Voices - Windows:
+  Since I took forever to find something that could do it, I have add a powershell script to the repo that will add the Microsoft OneCore voices to the available voices in Windows. These voices can be added to by downloading the speech pack for the Windows 10 languages. To have the script successfully execute, you must run it in administrator mode.
   
 ## License:
  Since this is based heavily on the Google Cloud Speech streaming example [here](https://cloud.google.com/speech/docs/streaming-recognize) , I have copied the license they used.
