@@ -27,11 +27,16 @@ voiceEngine = pyttsx.init()
 # Get list of OS installed voices
 voices = voiceEngine.getProperty('voices')
 print("Available voices: ")
-for voice in voices: print(colorama.Fore.CYAN + colorama.Style.BRIGHT + voice.name + colorama.Style.RESET_ALL)
+for number in range(0,len(voices)):
+    if number < 10:
+        print(colorama.Fore.CYAN + colorama.Style.BRIGHT + voices[number].name + colorama.Style.RESET_ALL)
+    else:
+        print(colorama.Fore.RED + "ERROR: More Voices than Hotkeys! The follow voice is unavailable: " + 
+        voices[number].name + colorama.Style.RESET_ALL)
 # Given a list of installed voices, set one as the engine voice
 voiceEngine.setProperty('voice', voices[1].id) # initial 2 voices installed with english windows, set to Zira
 # Set voice global variable for thread to change
-voiceID = voices[1].id
+voiceID = voices[0].id
 # Set mute global for thread and listen global
 playVoice = True
 isListening = True
@@ -195,7 +200,7 @@ def setupHotkeys():
     keyboard.add_hotkey('e', muteOutputTTS)
     keyboard.add_hotkey('q', closeAnalysisConnection)
     keyboard.add_hotkey('r', forceResetConnection)
-    for number in range(0,len(voices)):
+    for number in range(0, 10):
         keyboard.add_hotkey(str(number), changeVoice, args=[number])
     return
     
