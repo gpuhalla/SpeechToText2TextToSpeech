@@ -7,6 +7,7 @@ import re
 import sys
 import time
 import itertools
+import os
 
 from google.cloud import speech
 from google.cloud.speech import enums
@@ -21,23 +22,12 @@ import keyboard
 import colorama
 colorama.init()
 
-import pyttsx
 # Initialize voice engine for tts
+import pyttsx
 voiceEngine = pyttsx.init()
-# Get list of OS installed voices
-voices = voiceEngine.getProperty('voices')
-print("Available voices: ")
-for number in range(0,len(voices)):
-    if number < 10:
-        print(colorama.Fore.CYAN + colorama.Style.BRIGHT + voices[number].name + colorama.Style.RESET_ALL)
-    else:
-        print(colorama.Fore.RED + "ERROR: More Voices than Hotkeys! The follow voice is unavailable: " + 
-        voices[number].name + colorama.Style.RESET_ALL)
-# Given a list of installed voices, set one as the engine voice
-voiceEngine.setProperty('voice', voices[1].id) # initial 2 voices installed with english windows, set to Zira
-# Set voice global variable for thread to change
-voiceID = voices[0].id
-# Set mute global for thread and listen global
+
+# Set globals
+voiceID = 0
 playVoice = True
 isListening = True
 rtcRedo = False
@@ -200,8 +190,67 @@ def setupHotkeys():
     keyboard.add_hotkey('e', muteOutputTTS)
     keyboard.add_hotkey('q', closeAnalysisConnection)
     keyboard.add_hotkey('r', forceResetConnection)
-    for number in range(0, 10):
-        keyboard.add_hotkey(str(number), changeVoice, args=[number])
+    
+    setupVoiceHotkeys()
+    
+    return
+    
+def createVoiceFile():
+    print("No voice list file found; Creating file...")
+    vfile = open("voiceList.txt", "w+")
+    voices = voiceEngine.getProperty('voices')
+    for voice, number in zip(voices, range(0,len(voices))):
+        if number == 10:
+            vfile.write("---\n")
+            vfile.write(voice.name + "\n")
+        else:
+            vfile.write(voice.name + "\n")
+    vfile.close()
+    return
+
+def readVoiceFile():
+    vlist = []
+    try:
+        with open("voiceList.txt", "r") as vfile:
+            vlist = vfile.readlines()
+            #print(vlist)
+        vfile.close()
+    except:
+        print("ERROR: Unable to read Voice List file.")
+    
+    for number in range(0, len(vlist)-1):
+        if vlist[number] == "---\n":
+            vlist = vlist[:number]
+            break
+            
+    return vlist
+    
+def setupVoiceHotkeys():
+    vlist = readVoiceFile()
+    voices = voiceEngine.getProperty('voices')
+    vMatchList = []
+    for name in vlist:
+        for voice in voices:
+            #print(name[:-1] + " " + voice.name)
+            if voice.name == name.strip("\n"):
+                vMatchList.append(voice)
+                break
+
+    print(colorama.Fore.CYAN + colorama.Style.BRIGHT + "Voice Hotkeys: " + colorama.Style.RESET_ALL)
+    for number in range(0,len(vMatchList)):
+        keyboard.add_hotkey(str(number), changeVoice, args=[vMatchList[number]])
+        print(colorama.Fore.CYAN + colorama.Style.BRIGHT + "HotKey: " + str(number) + " - " + 
+            vMatchList[number].name + colorama.Style.RESET_ALL)
+    
+    global voiceID
+    voiceID = vMatchList[0].id
+    
+    return
+        
+def changeVoice(voice):
+    global voiceID
+    voiceID = voice.id
+    print(colorama.Fore.CYAN + colorama.Style.BRIGHT + "Voice changed to: " + voice.name + colorama.Style.RESET_ALL)
     return
     
 def muteOutputTTS():
@@ -228,19 +277,15 @@ def forceResetConnection():
     global oldTime, resetPress
     resetPress = True
     return
-    
-def changeVoice(number):
-    global voiceID
-    voices = voiceEngine.getProperty('voices')
-    voiceID = voices[number].id
-    print(colorama.Fore.CYAN + colorama.Style.BRIGHT + "Voice changed to: " + voices[number].name + colorama.Style.RESET_ALL)
-    return
 
 def main():
     # See http://g.co/cloud/speech/docs/languages
     # for a list of supported languages.
     language_code = 'en-US'  # a BCP-47 language tag
     
+    if not os.path.isfile("voiceList.txt"):
+        createVoiceFile()
+
     setupHotkeys()
     
     while(True):
