@@ -14,8 +14,9 @@ from google.cloud.speech import enums
 from google.cloud.speech import types
 import pyaudio
 from six.moves import queue
-# [END import_libraries]
+# [END Google import_libraries]
 
+# Hotkey functionality
 import keyboard
 
 # Colors for printing
@@ -126,8 +127,8 @@ def listen_print_loop(responses):
         if not isListening:
             break
         # How to deal with RTC timeouts?
-        global oldTime, resetPress
-        if time.time() > oldTime + 90 or resetPress:
+        global oldTime, resetPress, rtcRedo
+        if time.time() > oldTime + 60 or resetPress:
             oldTime = time.time()
             rtcRedo = True
             resetPress = False
@@ -202,9 +203,7 @@ def createVoiceFile():
     for voice, number in zip(voices, range(0,len(voices))):
         if number == 10:
             vfile.write("---\n")
-            vfile.write(voice.name + "\n")
-        else:
-            vfile.write(voice.name + "\n")
+        vfile.write(voice.name + "\n")
     vfile.close()
     return
 
@@ -219,7 +218,8 @@ def readVoiceFile():
         print("ERROR: Unable to read Voice List file.")
     
     for number in range(0, len(vlist)-1):
-        if vlist[number] == "---\n":
+        vlist[number] = vlist[number].strip("\n")
+        if vlist[number] == "---":
             vlist = vlist[:number]
             break
             
@@ -232,7 +232,7 @@ def setupVoiceHotkeys():
     for name in vlist:
         for voice in voices:
             #print(name[:-1] + " " + voice.name)
-            if voice.name == name.strip("\n"):
+            if voice.name == name:
                 vMatchList.append(voice)
                 break
 
@@ -274,7 +274,7 @@ def closeAnalysisConnection():
     return
     
 def forceResetConnection():
-    global oldTime, resetPress
+    global resetPress
     resetPress = True
     return
 
