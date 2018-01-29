@@ -1,5 +1,5 @@
 # SpeechToText 2 TextToSpeech
-A script to convert your voice into text, and play that text back with a text-to-speech voice
+A script to convert your voice into text, and play that text back with a text-to-speech voice.
 
 ## Requirements:
   * **NOTE:** Only tested on Windows, but should work on other OS's
@@ -19,7 +19,7 @@ A script to convert your voice into text, and play that text back with a text-to
   * Configuring your Google Cloud Speech access:
     * To access the Google Cloud using a client API, you must follow the guide [here](https://cloud.google.com/docs/authentication/getting-started).
     
-    In short: You must set the GOOGLE_APPLICATION_CREDENTIALS enviorment variable to the authentication key JSON file you obtain from your Google Cloud Console.
+    In short: You must set the GOOGLE_APPLICATION_CREDENTIALS enviroment variable to the authentication key JSON file you obtain from your Google Cloud Console.
        
 ## Running:
   ```
