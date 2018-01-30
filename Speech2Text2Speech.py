@@ -158,13 +158,13 @@ def listen_print_loop(responses):
         overwrite_chars = ' ' * (num_chars_printed - len(transcript))
 
         if not result.is_final:
-            sys.stdout.write(transcript + overwrite_chars + '\r')
+            sys.stdout.write('> ' + transcript + overwrite_chars + '\r')
             sys.stdout.flush()
 
             num_chars_printed = len(transcript)
 
         else:
-            print(transcript + overwrite_chars)
+            print('> ' + transcript + overwrite_chars)
             
             # Check for a change in voice engine voice
             voiceEngine.setProperty('voice', voiceID)
@@ -200,6 +200,8 @@ def createVoiceFile():
     print("No voice list file found; Creating file...")
     vfile = open("voiceList.txt", "w+")
     voices = voiceEngine.getProperty('voices')
+    if len(voices) == 0:
+        sys.exit("ERROR: pyttsx cannot find any installed system voices!")
     for voice, number in zip(voices, range(0,len(voices))):
         if number == 10:
             vfile.write("---\n")
@@ -215,7 +217,7 @@ def readVoiceFile():
             #print(vlist)
         vfile.close()
     except:
-        print("ERROR: Unable to read Voice List file.")
+        sys.exit("ERROR: Unable to read Voice List file!")
     
     for number in range(0, len(vlist)-1):
         vlist[number] = vlist[number].strip("\n")
@@ -243,6 +245,8 @@ def setupVoiceHotkeys():
             vMatchList[number].name + colorama.Style.RESET_ALL)
     
     global voiceID
+    if len(vMatchList) == 0:
+        sys.exit("ERROR: No installed system voice names match names in the voiceList!")
     voiceID = vMatchList[0].id
     
     return
