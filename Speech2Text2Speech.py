@@ -35,9 +35,6 @@ rtcRedo = False
 resetPress = False
 oldTime = time.time()
 
-oldtranscript = " "
-position = 0
-
 # Audio recording parameters
 RATE = 16000
 CHUNK = int(RATE / 10)  # 100ms
@@ -165,9 +162,6 @@ def listen_print_loop(responses):
             sys.stdout.flush()
 
             num_chars_printed = len(transcript)
-            
-            #word = determineWordToSay(transcript)
-            #readUsingTTS(word)
 
         else:
             print('> ' + transcript + overwrite_chars)
@@ -185,39 +179,6 @@ def listen_print_loop(responses):
 
             num_chars_printed = 0
             
-'''            
-def determineWordToSay(transcript):
-    global oldtranscript
-    #check for first change
-    strings = [oldtranscript, transcript]
-    position = 0
-    print(oldtranscript + " - " + transcript)
-    print(min(strings) + " - " + str(len(min(strings, key=len))))
-    
-    longstring = max(strings, key=len)
-    shortstring = min(strings, key=len)
-    for x in range(len(shortstring)-1):
-        if oldtranscript[x] != transcript[x]:
-            #roll back to index of previous space
-            position = oldtranscript[:x].rfind(" ")
-                #catch no previous space
-            if position == -1:
-                position = 0
-        else:
-            if len(longstring) > len(shortstring):
-                if longstring[len(shortstring)] != " ":
-                    position = oldtranscript.rfind(" ")
-                
-            else:
-                #if same, just go to end            
-                position = len(oldtranscript)
-            
-    word = transcript[position:]
-    print("word : " + word)
-    oldtranscript = transcript
-
-    return word
-'''
             
 def readUsingTTS(ttsMessage):
     # Play the tts message using voice engine
@@ -237,10 +198,10 @@ def setupHotkeys():
     
 def createVoiceFile():
     print("No voice list file found; Creating file...")
-    vfile = open("voiceListConfig.txt", "w+")
+    vfile = open("voiceList.txt", "w+")
     voices = voiceEngine.getProperty('voices')
     if len(voices) == 0:
-        sys.exit("ERROR: pyttsx cannot find any installed system voices!!!")
+        sys.exit("ERROR: pyttsx cannot find any installed system voices!")
     for voice, number in zip(voices, range(0,len(voices))):
         if number == 10:
             vfile.write("---\n")
@@ -251,12 +212,12 @@ def createVoiceFile():
 def readVoiceFile():
     vlist = []
     try:
-        with open("voiceListConfig.txt", "r") as vfile:
+        with open("voiceList.txt", "r") as vfile:
             vlist = vfile.readlines()
             #print(vlist)
         vfile.close()
     except:
-        sys.exit("ERROR: Unable to read Voice List file!!!")
+        sys.exit("ERROR: Unable to read Voice List file!")
     
     for number in range(0, len(vlist)-1):
         vlist[number] = vlist[number].strip("\n")
@@ -285,7 +246,7 @@ def setupVoiceHotkeys():
     
     global voiceID
     if len(vMatchList) == 0:
-        sys.exit("ERROR: No installed system voice names match names in the voiceList!!!")
+        sys.exit("ERROR: No installed system voice names match names in the voiceList!")
     voiceID = vMatchList[0].id
     
     return
@@ -326,7 +287,7 @@ def main():
     # for a list of supported languages.
     language_code = 'en-US'  # a BCP-47 language tag
     
-    if not os.path.isfile("voiceListConfig.txt"):
+    if not os.path.isfile("voiceList.txt"):
         createVoiceFile()
 
     setupHotkeys()
