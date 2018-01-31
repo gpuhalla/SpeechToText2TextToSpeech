@@ -198,10 +198,10 @@ def setupHotkeys():
     
 def createVoiceFile():
     print("No voice list file found; Creating file...")
-    vfile = open("voiceList.txt", "w+")
+    vfile = open("voiceListConfig.txt", "w+")
     voices = voiceEngine.getProperty('voices')
     if len(voices) == 0:
-        sys.exit("ERROR: pyttsx cannot find any installed system voices!")
+        sys.exit("ERROR: pyttsx cannot find any installed system voices!!!")
     for voice, number in zip(voices, range(0,len(voices))):
         if number == 10:
             vfile.write("---\n")
@@ -212,12 +212,12 @@ def createVoiceFile():
 def readVoiceFile():
     vlist = []
     try:
-        with open("voiceList.txt", "r") as vfile:
+        with open("voiceListConfig.txt", "r") as vfile:
             vlist = vfile.readlines()
             #print(vlist)
         vfile.close()
     except:
-        sys.exit("ERROR: Unable to read Voice List file!")
+        sys.exit("ERROR: Unable to read Voice List file!!!")
     
     for number in range(0, len(vlist)-1):
         vlist[number] = vlist[number].strip("\n")
@@ -246,7 +246,7 @@ def setupVoiceHotkeys():
     
     global voiceID
     if len(vMatchList) == 0:
-        sys.exit("ERROR: No installed system voice names match names in the voiceList!")
+        sys.exit("ERROR: No installed system voice names match names in the voiceList!!!")
     voiceID = vMatchList[0].id
     
     return
@@ -287,7 +287,7 @@ def main():
     # for a list of supported languages.
     language_code = 'en-US'  # a BCP-47 language tag
     
-    if not os.path.isfile("voiceList.txt"):
+    if not os.path.isfile("voiceListConfig.txt"):
         createVoiceFile()
 
     setupHotkeys()
