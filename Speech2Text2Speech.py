@@ -82,6 +82,7 @@ class MicrophoneStream(object):
         return None, pyaudio.paContinue
 
     def generator(self):
+        # Check to see if our close keys have been hit, or if we need to reset for RTC
         while not self.closed and isListening and not resetPress and time.time() < oldTime + 60:
             # Use a blocking get() to ensure there's at least one chunk of
             # data, and stop iteration if the chunk is None, indicating the
@@ -167,27 +168,32 @@ def listen_print_loop(responses):
             
             
 def readUsingTTS(ttsMessage):
-    # Play the tts message using voice engine
+    # Check for microphone mute
     if playVoice:
+        # Play the tts message using voice engine
         voiceEngine.say(ttsMessage)
         voiceEngine.runAndWait() 
     return
     
 def setupHotkeys():
+    # Initialize base hotkeys
     keyboard.add_hotkey('e', muteOutputTTS)
     keyboard.add_hotkey('q', closeAnalysisConnection)
     keyboard.add_hotkey('r', forceResetConnection)
     
+    # Run to setup special voice hotkeys
     setupVoiceHotkeys()
-    
     return
     
 def createVoiceFile():
+    # Config file isn't found, so create one
     print("No voice list file found; Creating file...")
     vfile = open("voiceListConfig.txt", "w+")
     voices = voiceEngine.getProperty('voices')
+    # If 'voices' is empty, no voices are installed/found
     if len(voices) == 0:
         sys.exit("ERROR: pyttsx cannot find any installed system voices!!!")
+    # Create a easy to read config file, marking off after 10 voices if needed
     for voice, number in zip(voices, range(0,len(voices))):
         if number == 10:
             vfile.write("---\n")
@@ -197,6 +203,7 @@ def createVoiceFile():
 
 def readVoiceFile():
     vlist = []
+    # File exists, but might be unreadble, so check
     try:
         with open("voiceListConfig.txt", "r") as vfile:
             vlist = vfile.readlines()
@@ -205,6 +212,7 @@ def readVoiceFile():
     except:
         sys.exit("ERROR: Unable to read Voice List file!!!")
     
+    # Create a list of names from lines in config file, cutting past 10
     for number in range(0, len(vlist)-1):
         vlist[number] = vlist[number].strip("\n")
         if vlist[number] == "---":
@@ -214,37 +222,44 @@ def readVoiceFile():
     return vlist
     
 def setupVoiceHotkeys():
+    # Get a list of voice names from config file
     vlist = readVoiceFile()
     voices = voiceEngine.getProperty('voices')
     vMatchList = []
+    # Compare config voice list against system installed voices
     for name in vlist:
         for voice in voices:
             #print(name[:-1] + " " + voice.name)
+            # If the config voice matches a system voice, add it to confirmed voice list
             if voice.name == name:
                 vMatchList.append(voice)
                 break
 
+    # Create hotkeys for each confirmed voice
     print(colorama.Fore.CYAN + colorama.Style.BRIGHT + "Voice Hotkeys: " + colorama.Style.RESET_ALL)
     for number in range(0,len(vMatchList)):
         keyboard.add_hotkey(str(number), changeVoice, args=[vMatchList[number]])
         print(colorama.Fore.CYAN + colorama.Style.BRIGHT + "HotKey: " + str(number) + " - " + 
             vMatchList[number].name + colorama.Style.RESET_ALL)
     
-    global voiceID
+    # Catch empty voice list
     if len(vMatchList) == 0:
         sys.exit("ERROR: No installed system voice names match names in the voiceList!!!")
+    global voiceID
     voiceID = vMatchList[0].id
     
     return
         
 def changeVoice(voice):
     global voiceID
+    # Change voice global to indicate a voice change
     voiceID = voice.id
     print(colorama.Fore.CYAN + colorama.Style.BRIGHT + "Voice changed to: " + voice.name + colorama.Style.RESET_ALL)
     return
     
 def muteOutputTTS():
     global playVoice
+    # Flip Microphone check to mute/unmute
     playVoice = not playVoice
     if playVoice:
         print(colorama.Fore.GREEN)
@@ -255,6 +270,7 @@ def muteOutputTTS():
     
 def closeAnalysisConnection():
     global isListening
+    # Flip check for a needed connection
     isListening = not isListening
     if isListening:
         print(colorama.Fore.GREEN)
@@ -265,6 +281,7 @@ def closeAnalysisConnection():
     
 def forceResetConnection():
     global resetPress
+    # Set a bool so connection will reset
     resetPress = True
     return
 
@@ -273,9 +290,11 @@ def main():
     # for a list of supported languages.
     language_code = 'en-US'  # a BCP-47 language tag
     
+    # If a config file doesn't exist, create one
     if not os.path.isfile("voiceListConfig.txt"):
         createVoiceFile()
 
+    # Create all hotkeys
     setupHotkeys()
     
     global oldTime, resetPress
@@ -307,6 +326,7 @@ def main():
                 listen_print_loop(responses)
                 
         else:
+            # If we aren't connected, display an updating marker so we know we haven't crashed
             spinner = itertools.cycle(['-', '/', '|', '\\'])
             while not isListening:
                 sys.stdout.write('Not Listening... ' + spinner.next() + '\r')
