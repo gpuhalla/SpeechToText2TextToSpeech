@@ -82,7 +82,7 @@ class MicrophoneStream(object):
         return None, pyaudio.paContinue
 
     def generator(self):
-        while not self.closed:
+        while not self.closed and isListening and not resetPress and time.time() < oldTime + 60:
             # Use a blocking get() to ensure there's at least one chunk of
             # data, and stop iteration if the chunk is None, indicating the
             # end of the audio stream.
@@ -122,21 +122,7 @@ def listen_print_loop(responses):
     """
     num_chars_printed = 0
     for response in responses:
-        
-        # Do we still need to have Google listen?
-        if not isListening:
-            break
-        # How to deal with RTC timeouts?
-        global oldTime, resetPress, rtcRedo
-        if time.time() > oldTime + 60 or resetPress:
-            oldTime = time.time()
-            rtcRedo = True
-            resetPress = False
-            print("Resetting connection to avoid RTC Timeout...")
-            break
-        else:
-            rtcRedo = False
-        
+                
         if not response.results:
             continue
 
@@ -292,9 +278,13 @@ def main():
 
     setupHotkeys()
     
+    global oldTime, resetPress
     while(True):
-        if isListening or rtcRedo:
+        if isListening:
 
+            oldTime = time.time()
+            resetPress = False
+        
             client = speech.SpeechClient()
             #print(client)
             print("Connected: Okay, Start Talking!")
@@ -310,17 +300,15 @@ def main():
                 audio_generator = stream.generator()
                 requests = (types.StreamingRecognizeRequest(audio_content=content)
                             for content in audio_generator)
-
+  
                 responses = client.streaming_recognize(streaming_config, requests)
 
                 # Now, put the transcription responses to use.
                 listen_print_loop(responses)
                 
         else:
-            #print("Not Listening...")
             spinner = itertools.cycle(['-', '/', '|', '\\'])
             while not isListening:
-                global oldTime
                 sys.stdout.write('Not Listening... ' + spinner.next() + '\r')
                 sys.stdout.flush()
                 time.sleep(0.2)
