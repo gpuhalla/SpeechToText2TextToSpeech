@@ -1,3 +1,10 @@
+#Voice config file is per computer
+voiceListConfig.txt
+
+#Project files used for debugging
+*.pyproj
+.vs/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
